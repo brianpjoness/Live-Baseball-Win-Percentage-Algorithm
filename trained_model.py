@@ -67,15 +67,16 @@ def prepare_modeling_data(df):
 
     modeling_df = df[feature_cols + [target, "game_pk", "game_date"]].dropna()
 
-    print("---------------------------------------------------------------------------------------------------------------------------")
+    print("=" * 50)
     print("Dataframe Shape: ")
     print(modeling_df.shape)
+    print("=" * 50)
     print("Target Distribution: ")
     print(modeling_df.value_counts(normalize=True))
-    print("--------------------------------------------------------------------------------------------------------------------------")
+    print("=" * 50)
     return modeling_df, feature_cols, target
 
-modeling_df, feature_cols, target = prepare_modeling_data(df)
+
 
 def temporal_train_test_split(df, test_size =0.2):
     # important to split data based on the game to avoid data leakage
@@ -88,7 +89,7 @@ def temporal_train_test_split(df, test_size =0.2):
     return train_df, test_df
 
 # return train and test df
-train_df, test_df = temporal_train_test_split(modeling_df)
+
 
 def train_baseline_models(train_df, test_df, feature_names):
     # train logistic regression and random forest models
@@ -118,42 +119,46 @@ def train_baseline_models(train_df, test_df, feature_names):
     print("ROC AUC: ", roc_auc_score(y_test, log_reg.predict_proba(X_test)[:, 1])) # receiver operating characteristic area under the curve
     # shows how well classifier seperates positive and negative classes 1 is perfect 0.5 is guessing
     print("Log Loss: ", log_loss(y_test, log_reg.predict_proba(X_test))) # how confident the model is in its predictions lower is better (0 perfect)
-    print("--------------------------------------------------------------------------------------------------------------------------")
+    print("=" * 50)
 
     # split up the param grid so i can try lbfgs since it only works with l2
-    param_grid = [
-        {
-            'solver': ['lbfgs'],
-            'penalty': ['l2'],
-            'C': [0.01, 0.1, 1, 10, 100],
-            'max_iter': [100, 200],
-            'class_weight': [None, 'balanced'],
-        },
-        {
-            'solver': ['liblinear'],
-            'penalty': ['l1', 'l2'],
-            'C': [0.01, 0.1, 1, 10, 100],
-            'max_iter': [100, 200],
-            'class_weight': [None, 'balanced'],
-        },
-        {
-            'solver': ['saga'],
-            'penalty': ['l1', 'l2'],
-            'C': [0.01, 0.1, 1, 10, 100],
-            'max_iter': [100, 200],
-            'class_weight': [None, 'balanced'],
-        }
-    ]
-    model = LogisticRegression()
-    grid = GridSearchCV(model, param_grid, cv=5)
-    grid.fit(X_train, y_train)
+    # param_grid = [
+    #     {
+    #         'solver': ['lbfgs'],
+    #         'penalty': ['l2'],
+    #         'C': [0.01, 0.1, 1, 10, 100],
+    #         'max_iter': [100, 200],
+    #         'class_weight': [None, 'balanced'],
+    #     },
+    #     {
+    #         'solver': ['liblinear'],
+    #         'penalty': ['l1', 'l2'],
+    #         'C': [0.01, 0.1, 1, 10, 100],
+    #         'max_iter': [100, 200],
+    #         'class_weight': [None, 'balanced'],
+    #     },
+    #     {
+    #         'solver': ['saga'],
+    #         'penalty': ['l1', 'l2'],
+    #         'C': [0.01, 0.1, 1, 10, 100],
+    #         'max_iter': [100, 200],
+    #         'class_weight': [None, 'balanced'],
+    #     }
+    # ]
+    # model = LogisticRegression()
+    # grid = GridSearchCV(model, param_grid, cv=5)
+    # grid.fit(X_train, y_train)
+    #
+    # print("Best Parameters: ", grid.best_params_)
+    # print("-" * 50)
 
-    print("Best Parameters: ", grid.best_params_)
-    print("--------------------------------------------------------------------------------------------------------------------------")
+    # get the importances of the features
+    feature_importance = pd.Series(log_reg.coef_[0], index=feature_names)
+    print("Feature Importances: ")
+    print(feature_importance)
+    print("=" * 50)
+
     return X_train, X_test, y_train, y_test, y_pred, log_reg
-
-
-X_train, X_test, y_train, y_test, y_pred, log_reg = train_baseline_models(train_df, test_df, feature_cols)
 
 
 
@@ -199,29 +204,21 @@ def analyze_predictions_by_game_situation(df, y_predictions, y_test):
         include_groups=False
     )
 
-
+    print(inning_summary)
+    print("\n" + "=" * 50 + "\n")
+    print(score_diff_summary)
 
     return (inning_summary,
             score_diff_summary)
 
-print(analyze_predictions_by_game_situation(test_df, y_pred, y_test))
+
 
 def run_modeling_pipeline(df):
-    # finsih modeling pipeline
-    hi = 1
-# prepare data with corresponding function and put it into the corresponding variables
-# split data with appropriate function we made into test and train df
+    modeling_df, feature_cols, target = prepare_modeling_data(df)
+    train_df, test_df = temporal_train_test_split(modeling_df)
+    X_train, X_test, y_train, y_test, y_pred, log_reg = train_baseline_models(train_df, test_df, feature_cols)
+    (analyze_predictions_by_game_situation(test_df, y_pred, y_test))
 
-# then we have to divide into x and y
+    return
 
-# train models with correct function
-
-# evaluate
-
-# analyze best model
-# outpput best model name
-
-# then do the predictions by game situation
-
-# return stuff you gotta return
-
+run_modeling_pipeline(df)
