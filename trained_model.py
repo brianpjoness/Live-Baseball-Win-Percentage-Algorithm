@@ -1,4 +1,4 @@
-
+import pickle
 import pandas as pd
 import numpy as np
 from pybaseball import statcast
@@ -100,7 +100,10 @@ def train_baseline_models(train_df, test_df, feature_names):
     X_train= scaler.fit_transform(train_df[feature_names])
     y_train = train_df["is_batting_team_winner"]
 
-    X_test =  scaler.fit_transform(test_df[feature_names])
+    X_test =  scaler.transform(test_df[feature_names]) # important that it is scaler.transform to avoid data leakage
+    # fit_transform is calculating and applying with the mean and standard deviation of that dataset
+    # for test you want to just use transform because that takes the scaler.fit_transform that is stored and was used on X_train
+    # if you fit_transform on the test it is data leakage
     y_test = test_df["is_batting_team_winner"]
 
     log_reg = LogisticRegression(penalty="l1", C=0.01, max_iter=100, class_weight="balanced", solver="liblinear")
@@ -158,9 +161,18 @@ def train_baseline_models(train_df, test_df, feature_names):
     print(feature_importance)
     print("=" * 50)
 
-    return X_train, X_test, y_train, y_test, y_pred, log_reg
+    return X_train, X_test, y_train, y_test, y_pred, log_reg, scaler
 
 
+def save_model_and_scalar(model, scaler):
+    # this saves the trained model and the scaler so we can use it in our predictor file
+    with open("trained_model.pkl", "wb") as f:
+        pickle.dump(model, f) # this saves the model
+
+    with open("scaler.pkl", "wb") as f:
+        pickle.dump(scaler, f)
+
+    print("Model and Scaler saved successfully")
 
 def analyze_predictions_by_game_situation(df, y_predictions, y_test):
     # inning, score dif, on base
@@ -216,9 +228,12 @@ def analyze_predictions_by_game_situation(df, y_predictions, y_test):
 def run_modeling_pipeline(df):
     modeling_df, feature_cols, target = prepare_modeling_data(df)
     train_df, test_df = temporal_train_test_split(modeling_df)
-    X_train, X_test, y_train, y_test, y_pred, log_reg = train_baseline_models(train_df, test_df, feature_cols)
+    X_train, X_test, y_train, y_test, y_pred, log_reg, scaler = train_baseline_models(train_df, test_df, feature_cols)
     (analyze_predictions_by_game_situation(test_df, y_pred, y_test))
 
-    return
+    save_model_and_scalar(log_reg, scaler)
+    return log_reg, scaler
 
 run_modeling_pipeline(df)
+
+model, scaler = run_modeling_pipeline(df)
