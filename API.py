@@ -50,6 +50,17 @@ def extract_game_features(live_data):  # turns live mlb data to the format of th
         home_score = linescore["teams"]["home"].get("runs", 0)  # .get returns the value of runs or 0 if it doesnt exist
         away_score = linescore["teams"]["away"].get("runs", 0)
 
+        matchup = current_play.get('matchup', {})
+        batter_info = matchup.get('batter', {})
+        pitcher_info = matchup.get('pitcher', {})
+
+        # gets the batter and pitcher name
+        batter_name = batter_info.get('fullName', None)
+        pitcher_name = pitcher_info.get('fullName', None)
+
+        # If that doesn't work, try the boxscore approach
+
+
         # this determines logic of the batting teams (home vs away)
         if is_top_inning:
             batting_team = away_team
@@ -94,7 +105,9 @@ def extract_game_features(live_data):  # turns live mlb data to the format of th
             'home_team': home_team,
             'away_team': away_team,
             'home_score': home_score,
-            'away_score': away_score
+            'away_score': away_score,
+            "batter": batter_name,
+            "pitcher": pitcher_name
         }
 
         return features
@@ -107,29 +120,3 @@ def extract_game_features(live_data):  # turns live mlb data to the format of th
         return None
 
 
-def main():
-
-    # information on todays games
-    games = get_todays_games()
-
-    # this gives the information on all of the games today
-    print("Today's games:")
-    for date_data in games.get('dates', []):
-        for game in date_data.get('games', []):  # goes through each game today
-            status = game['status']['detailedState']
-            away = game['teams']['away']['team']['name']
-            home = game['teams']['home']['team']['name']
-            print(f"Game {game['gamePk']}: {away} @ {home} ({status})")
-
-    test_game_pk = 776923
-
-    try:
-        live_data = get_live_game_data(test_game_pk)
-        features = extract_game_features(live_data)  # gets the features from live data
-        print(f"Extracted features: {features}")
-
-    except Exception as e:
-        print(f"Error testing: {e}")
-
-
-main()
