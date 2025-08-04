@@ -4,6 +4,8 @@ import pandas as pd
 from datetime import datetime
 from API import get_live_game_data, extract_game_features, get_todays_games  # allows you to import from your directory
 import time
+import json
+
 
 class LiveMLBPredictor:
     # makes live predictions using model
@@ -81,6 +83,8 @@ class LiveMLBPredictor:
             except Exception as e:
                 print(f"Error predicting game {game_pk}: {e}")
 
+        return predictions
+
 def display_game_info(prediction): # formats the data for the current game id that was selected
     if not prediction:
         return
@@ -98,48 +102,4 @@ def display_game_info(prediction): # formats the data for the current game id th
     print("-" * 50)
 
 
-def main():
 
-    # games availiable
-
-    games = get_todays_games()
-
-    # this gives the information on all of the games today
-    print("Today's games:")
-    for date_data in games.get('dates', []):
-        for game in date_data.get('games', []):  # goes through each game today
-            status = game['status']['detailedState']
-            away = game['teams']['away']['team']['name']
-            home = game['teams']['home']['team']['name']
-            print(f"Game {game['gamePk']}: {away} @ {home} ({status})")
-
-    test_game_pk = 776917
-
-    try:
-        live_data = get_live_game_data(test_game_pk)
-        features = extract_game_features(live_data)  # gets the features from live data
-        print(f"Extracted features: {features}")
-
-    except Exception as e:
-        print(f"Error testing: {e}")
-
-    print("=" * 200)
-
-    # feature extraction
-
-    try:
-        live_data = get_live_game_data(test_game_pk)
-        features = extract_game_features(live_data)
-
-    except Exception as e:
-        print(f"Error testing: {e}")
-
-    # Uncomment when you have saved your model:
-    predictor = LiveMLBPredictor('trained_model.pkl', 'scaler.pkl')
-    predictions = predictor.predict_all_live_games()
-
-    prediction = predictor.predict_game(test_game_pk)
-    print("\nDetailed Game Information:")
-    display_game_info(prediction)
-
-main()
